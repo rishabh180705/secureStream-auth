@@ -1,15 +1,19 @@
 package com.securestream.auth.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import org.springframework.stereotype.Component;
 
 
 import java.time.LocalDateTime;
 
+@Component
+@Entity
+@Builder
 @Setter
 @Getter
-@Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "users")
 public class User {
 
@@ -32,6 +36,9 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @Enumerated(EnumType.STRING)
+    private Subscription subscription;
 
 
     private boolean enabled;
