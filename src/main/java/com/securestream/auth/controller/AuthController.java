@@ -1,6 +1,6 @@
 package com.securestream.auth.controller;
+import com.securestream.auth.dto.AuthResponse;
 import com.securestream.auth.dto.LoginRequest;
-import com.securestream.auth.dto.LoginResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
@@ -27,14 +27,22 @@ public class AuthController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+
+    
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
+    public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request){
 
         return ResponseEntity.ok(
                 authService.login(request)
         );
     }
+
+//    @PostMapping("/refresh")
+//    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+//        return ResponseEntity.ok(authService.refreshToken(request));
+//    }
 
 }
 

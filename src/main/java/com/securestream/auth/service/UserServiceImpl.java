@@ -17,7 +17,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     @Override
     public String deleteUser(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UserDoes_notExit("User does not exist"));
 
         userRepository.deleteByEmail(email);
@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUser(String email) {
-        User user=userRepository.findByEmail(email).orElseThrow(
+        User user=userRepository.findByEmailIgnoreCase(email).orElseThrow(
                 ()->new UserDoes_notExit("User does not exist"));
         ModelMapper modelMapper = new ModelMapper();
         return modelMapper.map(user, UserDto.class);

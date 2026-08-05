@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import com.securestream.auth.entity.User;
 import com.securestream.auth.repository.UserRepository;
-
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
@@ -19,15 +19,18 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-
     @Override
-    public UserDetails loadUserByUsername(String username)
-            throws UsernameNotFoundException {
+    @Transactional(readOnly = true)
+    public CustomUserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UsernameNotFoundException("No user found with email: " + email));
+        return new CustomUserDetails(user);
+    }
 
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found"));
-
+    @Transactional(readOnly = true)
+    public CustomUserDetails loadUserById(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("No user found with id: " + userId));
         return new CustomUserDetails(user);
     }
 }

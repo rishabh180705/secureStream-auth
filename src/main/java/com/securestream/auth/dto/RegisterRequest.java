@@ -9,15 +9,13 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 public class RegisterRequest {
-
     @NotBlank(message = "Name is required")
     private String name;
-
     @NotBlank(message = "Email is required")
     @Email(message = "Enter a valid email")
     private String email;
 
     @NotBlank
-    @Size(min = 8, max = 20)
+    @Size(min = 8, max = 25)
     private String password;
 }

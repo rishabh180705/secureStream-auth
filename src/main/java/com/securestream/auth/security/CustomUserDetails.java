@@ -38,18 +38,21 @@ public class CustomUserDetails implements UserDetails {
         return user.getEmail();
     }
 
-//    @Override
-//    public boolean isAccountNonLocked() {
-//        return true;
-//    }
-//
+    @Override
+    public boolean isAccountNonLocked() {
+        return user.isAccountNonLocked();
+    }
+
 //    @Override
 //    public boolean isCredentialsNonExpired() {
 //        return true;
 //    }
 
-    public Subscription getSubscription() {
-        return user.getSubscription();
+    public String getSubscription() {
+        return user.getSubscription().name();
+    }
+    public String getUserId() {
+        return user.getId();
     }
 
     @Override

@@ -9,41 +9,50 @@ import java.time.LocalDateTime;
 
 @Component
 @Entity
+@Table(name = "users", indexes = {
+        @Index(name = "idx_users_email", columnList = "email", unique = true)
+})
 @Builder
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "users")
 public class User {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-
-    @Column(nullable = false)
-    private String name;
-
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
 
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
+    private String name;
+
+    /** B Crypt-hashed password. Never store plaintext. */
 
     @Column(nullable = false)
     private String password;
 
 
     @Enumerated(EnumType.STRING)
-    private Role role;
+    @Column(nullable = false)
+    @Builder.Default
+    private Role role= Role.USER;
 
     @Enumerated(EnumType.STRING)
-    private Subscription subscription;
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private Subscription subscription = Subscription.REGULAR;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean accountNonLocked = true;
 
-    private boolean enabled;
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean enabled = true;
 
-
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
 
@@ -56,12 +65,9 @@ public class User {
         updatedAt = LocalDateTime.now();
     }
 
-
     @PreUpdate
     public void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
-
 
 }
