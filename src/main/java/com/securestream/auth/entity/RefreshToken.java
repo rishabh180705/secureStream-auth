@@ -13,6 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name= "refresh_token")
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class RefreshToken {

@@ -1,18 +1,13 @@
 package com.securestream.auth.service;
 
-import com.securestream.auth.dto.AuthResponse;
-import com.securestream.auth.dto.LoginRequest;
-import com.securestream.auth.dto.RegisterRequest;
+import com.securestream.auth.dto.*;
+import jakarta.validation.Valid;
 
 
 public interface AuthService {
 
     String register(RegisterRequest request);
 
-    AuthResponse login(LoginRequest request);
-
-
-
-
-
+    AuthResponse login(LoginRequest request,String ip,String userAgent);
+    RefreshTokenResponse refreshToken(RefreshTokenRequest request);
 }

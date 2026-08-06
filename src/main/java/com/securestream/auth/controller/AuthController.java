@@ -1,11 +1,11 @@
 package com.securestream.auth.controller;
-import com.securestream.auth.dto.AuthResponse;
-import com.securestream.auth.dto.LoginRequest;
+import com.securestream.auth.dto.*;
+import com.securestream.auth.security.ClientRequestUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.securestream.auth.dto.RegisterRequest;
 import com.securestream.auth.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -32,17 +32,20 @@ public class AuthController {
     
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
-            @Valid @RequestBody LoginRequest request){
+            @Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest){
 
+            String ip = ClientRequestUtils.resolveClientIp(httpRequest);
+            String userAgent = ClientRequestUtils.resolveUserAgent(httpRequest);
+            System.out.println("device"+ip + " " + userAgent);
         return ResponseEntity.ok(
-                authService.login(request)
+                authService.login(request,ip,userAgent)
         );
     }
 
-//    @PostMapping("/refresh")
-//    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-//        return ResponseEntity.ok(authService.refreshToken(request));
-//    }
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request));
+    }
 
 }
 
