@@ -29,6 +29,7 @@ public class RefreshToken {
     private LocalDateTime expiresAt;
     private String ipAddress;
     private String userAgent;
+    private LocalDateTime revokedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

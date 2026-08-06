@@ -12,21 +12,21 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-//    @ExceptionHandler(InvalidCredentialsException.class)
-//    public ResponseEntity<ErrorResponse> handleUserDoes_notExit
-//            (InvalidCredentialsException ex,HttpServletRequest request )
-//    {
-//        ErrorResponse res =new ErrorResponse(
-//                LocalDateTime.now(),
-//                HttpStatus.BAD_REQUEST.value(),
-//                ex.getMessage(),
-//                request.getRequestURI()
-//        );
-//        return ResponseEntity
-//                .status(HttpStatus.BAD_REQUEST)
-//                .body(res);
-//
-//    }
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> InvalidCredentialsException
+            (InvalidCredentialsException ex,HttpServletRequest request )
+    {
+        ErrorResponse res =new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(res);
+
+    }
     @ExceptionHandler(DeviceLimitExceededException.class)
     public ResponseEntity<ErrorResponse> DeviceLimitException
             (DeviceLimitExceededException ex,HttpServletRequest request )

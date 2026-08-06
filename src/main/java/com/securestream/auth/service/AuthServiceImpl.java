@@ -57,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse login(LoginRequest request,String ip,String userAgent) {
+    public AuthResponse login(LoginRequest request, String ip, String userAgent) {
 
         User user = userRepository.findByEmailIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new UserDoes_notExit("User doesn't exist"));
@@ -71,8 +71,32 @@ public class AuthServiceImpl implements AuthService {
         if (!user.isAccountNonLocked()) {
             throw new InvalidCredentialsException("Account is locked");
         }
+        RefreshToken existingDevice =
+                refreshTokenRepository.findByUserAndDeviceIdAndRevokedFalse(
+                        user,
+                        request.getDeviceId()
+                ).orElse(null);
 
-        long deviceMaxCount= user.getSubscription()==Subscription.BASIC?1:3;
+        if (existingDevice != null) {
+            CustomUserDetails customUserDetails = new CustomUserDetails(user);
+            String newRefreshToken = jwtService.generateRefreshToken(customUserDetails);
+            String AccessToken = jwtService.generateAccessToken(customUserDetails);
+            existingDevice.setRefreshToken(newRefreshToken);
+
+            existingDevice.setLastUsedAt(LocalDateTime.now());
+
+            existingDevice.setExpiresAt(LocalDateTime.now().plusSeconds(jwtService.getRefreshTokenExpiryMs() / 1000));
+
+            refreshTokenRepository.save(existingDevice);
+            return AuthResponse.builder()
+                    .accessToken(AccessToken)
+                    .refreshToken(newRefreshToken)
+                    .tokenType("Bearer")
+                    .accessTokenExpiresInSeconds(jwtService.getAccessTokenExpirySeconds())
+//                  .sessionId(sessionId)
+                    .build();
+        }
+        long deviceMaxCount = user.getSubscription() == Subscription.BASIC ? 1 : 3;
 
         long activeDevice = refreshTokenRepository.countByUserAndRevokedFalse(user);
         if (activeDevice >= deviceMaxCount) {
@@ -83,8 +107,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
 
-
-        return issueTokensForNewSession(user,ip,userAgent,request.getDeviceId());
+        return issueTokensForNewSession(user, ip, userAgent, request.getDeviceId());
 
     }
 
@@ -113,19 +136,20 @@ public class AuthServiceImpl implements AuthService {
             token.setLastUsedAt(LocalDateTime.now());
             refreshTokenRepository.save(token);
 
-             return RefreshTokenResponse.builder()
-                     .accessToken(accessToken)
-                     .tokenType(type)
-                     .expiresIn(ttl)
-                     .build();
+            return RefreshTokenResponse.builder()
+                    .accessToken(accessToken)
+                    .tokenType(type)
+                    .expiresIn(ttl)
+                    .build();
 
         } else {
-          throw new InvalidCredentialsException("Invalid refresh token");
+            throw new InvalidCredentialsException("Invalid refresh token");
         }
 
     }
 
-    private AuthResponse issueTokensForNewSession(User user,String ip,String userAgent,String deviceId) {
+
+    private AuthResponse issueTokensForNewSession(User user, String ip, String userAgent, String deviceId) {
         CustomUserDetails principal = new CustomUserDetails(user);
         String accessToken = jwtService.generateAccessToken(principal);
         String refreshToken = jwtService.generateRefreshToken(principal);
@@ -153,5 +177,47 @@ public class AuthServiceImpl implements AuthService {
 
     }
 
+    @Override
+    public void logout(LogoutRequest request) {
+        if ((!jwtService.isTokenValid(request.getRefreshToken())) ||
+                (!jwtService.isRefreshToken(request.getRefreshToken()))) {
+            throw new InvalidCredentialsException("Invalid refresh token");
+        }
+        RefreshToken token = refreshTokenRepository.findByRefreshToken(
+                request.getRefreshToken()).orElseThrow(() ->
+                new InvalidCredentialsException("Refresh token not found"));
+
+        if (token.isRevoked()) {
+            return;
+        }
+        token.setRevokedAt(LocalDateTime.now());
+        token.setRevoked(true);
+
+        refreshTokenRepository.save(token);
+//        refreshTokenRepository.setRevokedTrueByRefreshToken(request.getRefreshToken());
+    }
+
+    @Override
+    public void logoutFromAllSessions(LogoutRequest request) {
+
+        if ((!jwtService.isTokenValid(request.getRefreshToken())) ||
+                (!jwtService.isRefreshToken(request.getRefreshToken()))) {
+            throw new InvalidCredentialsException("Invalid refresh token");
+        }
+        RefreshToken token = refreshTokenRepository.findByRefreshToken(
+                request.getRefreshToken()).orElseThrow(() ->
+                new InvalidCredentialsException("Refresh token not found"));
+
+//         String email=jwtService.extractUserId(request.getRefreshToken());
+//
+//        User user= userRepository.findByEmailIgnoreCase(email).orElseThrow(
+//                () -> new UserDoes_notExit("User doesn't exist")
+//        );
+        if (token.isRevoked()) {
+            return;
+        }
+        refreshTokenRepository.revokeAllByUser(token.getUser());
+
+    }
 
 }
