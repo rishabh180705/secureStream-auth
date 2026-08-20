@@ -23,7 +23,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     );
 
 
-    void setRevokedTrueByRefreshToken(String refreshToken);
+   // void setRevokedTrueByRefreshToken(String refreshToken);
 
     @Modifying
     @Transactional

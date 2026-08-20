@@ -1,6 +1,7 @@
 package com.securestream.auth.controller;
 import com.securestream.auth.dto.*;
 import com.securestream.auth.security.ClientRequestUtils;
+import com.securestream.auth.service.OtpService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final OtpService otpService;
 
 
     @PostMapping("/register")
@@ -62,6 +64,40 @@ public class AuthController {
         authService.logoutFromAllSessions(request);
 
         return ResponseEntity.ok("Logged out successfully from all active sessions");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        authService.forgotPassword(request);
+
+        return ResponseEntity.ok(
+                "If the email is registered, a password reset OTP has been sent."
+        );
+    }
+    @PostMapping("/verify-otp")
+    public ResponseEntity<VerifyOtpResponse> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequest request) {
+
+
+        String resetToken = otpService.verifyOtp(
+                request.getEmail().toLowerCase(),
+                request.getOtp()
+        );
+
+        return ResponseEntity.ok(
+                new VerifyOtpResponse(resetToken)
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+
+          authService.resetPassword(request);
+        return ResponseEntity.ok(
+                "password reset successfully"
+        );
     }
 
 

@@ -6,21 +6,20 @@ import java.util.Optional;
 
 import com.securestream.auth.dto.*;
 
-import com.securestream.auth.entity.RefreshToken;
-import com.securestream.auth.entity.Subscription;
+import com.securestream.auth.entity.*;
 import com.securestream.auth.exception.DeviceLimitExceededException;
 import com.securestream.auth.exception.EmailAlreadyExistsException;
 import com.securestream.auth.exception.InvalidCredentialsException;
 import com.securestream.auth.exception.UserDoes_notExit;
+import com.securestream.auth.repository.PasswordResetTokenRepository;
 import com.securestream.auth.repository.RefreshTokenRepository;
 import com.securestream.auth.security.CustomUserDetails;
 import com.securestream.auth.security.JwtService;
 import lombok.Data;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.securestream.auth.entity.Role;
-import com.securestream.auth.entity.User;
 import com.securestream.auth.repository.UserRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Data
@@ -31,6 +30,10 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final  OtpService otpService;
+    private final PasswordResetTokenRepository tokenRepository;
+    private final AccountLockService accountLockService;
+    private final EmailService emailService;
 
     @Override
     public String register(RegisterRequest request) {
@@ -62,9 +65,17 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmailIgnoreCase(request.getEmail())
                 .orElseThrow(() -> new UserDoes_notExit("User doesn't exist"));
 
+        if (accountLockService.isLocked(user)) {
+            throw new InvalidCredentialsException(
+                    "Account is temporarily locked"
+            );
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            accountLockService.handleFailedLogin(user);
             throw new InvalidCredentialsException("Invalid email or password");
         }
+
         if (!user.isEnabled()) {
             throw new InvalidCredentialsException("Account is disabled");
         }
@@ -106,7 +117,7 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-
+        accountLockService.handleSuccessfulLogin(user);
         return issueTokensForNewSession(user, ip, userAgent, request.getDeviceId());
 
     }
@@ -200,8 +211,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logoutFromAllSessions(LogoutRequest request) {
 
-        if ((!jwtService.isTokenValid(request.getRefreshToken())) ||
-                (!jwtService.isRefreshToken(request.getRefreshToken()))) {
+        if (!jwtService.isTokenValid(request.getRefreshToken())||
+                !jwtService.isRefreshToken(request.getRefreshToken())){
             throw new InvalidCredentialsException("Invalid refresh token");
         }
         RefreshToken token = refreshTokenRepository.findByRefreshToken(
@@ -218,6 +229,69 @@ public class AuthServiceImpl implements AuthService {
         }
         refreshTokenRepository.revokeAllByUser(token.getUser());
 
+    }
+
+
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+
+        Optional<User> userOptional =
+                userRepository.findByEmailIgnoreCase(
+                        request.getEmail()
+                );
+
+        if (userOptional.isEmpty()) {
+            return;
+        }
+
+        User user = userOptional.get();
+
+
+        String otp = otpService.generateOtp(user);
+
+        emailService.sendPasswordResetOtp(
+                user.getEmail(),
+                otp
+        );
+    }
+
+    @Transactional
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+
+        String token=request.getResetToken();
+
+        PasswordResetToken resetToken =
+                tokenRepository.findByToken(token)
+                        .orElseThrow(() ->
+                                new InvalidCredentialsException(
+                                        "Invalid reset token"
+                                ));
+
+        if (resetToken.isUsed()) {
+            throw new InvalidCredentialsException(
+                    "Reset token already used"
+            );
+        }
+
+        if (resetToken.getExpiresAt()
+                .isBefore(LocalDateTime.now())) {
+
+            throw new InvalidCredentialsException(
+                    "Reset token expired"
+            );
+        }
+
+        User user = resetToken.getUser();
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        tokenRepository.save(resetToken);
+
+        refreshTokenRepository.revokeAllByUser(user);
     }
 
 }

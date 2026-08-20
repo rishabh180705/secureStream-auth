@@ -90,8 +90,8 @@ public class SecurityConfig {
 
                         // Coarse URL-pattern based rules. Fine-grained checks additionally live on
                         // controller methods via @PreAuthorize for defense in depth.
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/premium/**").hasAnyRole("SUBSCRIBER", "ADMIN")
+//                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+//                        .requestMatchers("/api/v1/premium/**").hasAnyRole("SUBSCRIBER", "ADMIN")
 
                         .anyRequest().authenticated())
 
